@@ -1,0 +1,224 @@
+States
+{'code': '01', 'value_represented': 'Alabama'}
+{'code': '02', 'value_represented': 'Alaska'}
+{'code': '04', 'value_represented': 'Arizona'}
+{'code': '05', 'value_represented': 'Arkansas'}
+{'code': '06', 'value_represented': 'California'}
+{'code': '08', 'value_represented': 'Colorado'}
+{'code': '09', 'value_represented': 'Connecticut'}
+{'code': '10', 'value_represented': 'Delaware'}
+{'code': '11', 'value_represented': 'District Of Columbia'}
+{'code': '12', 'value_represented': 'Florida'}
+{'code': '13', 'value_represented': 'Georgia'}
+{'code': '15', 'value_represented': 'Hawaii'}
+{'code': '16', 'value_represented': 'Idaho'}
+{'code': '17', 'value_represented': 'Illinois'}
+{'code': '18', 'value_represented': 'Indiana'}
+{'code': '19', 'value_represented': 'Iowa'}
+{'code': '20', 'value_represented': 'Kansas'}
+{'code': '21', 'value_represented': 'Kentucky'}
+{'code': '22', 'value_represented': 'Louisiana'}
+{'code': '23', 'value_represented': 'Maine'}
+{'code': '24', 'value_represented': 'Maryland'}
+{'code': '25', 'value_represented': 'Massachusetts'}
+{'code': '26', 'value_represented': 'Michigan'}
+{'code': '27', 'value_represented': 'Minnesota'}
+{'code': '28', 'value_represented': 'Mississippi'}
+{'code': '29', 'value_represented': 'Missouri'}
+{'code': '30', 'value_represented': 'Montana'}
+{'code': '31', 'value_represented': 'Nebraska'}
+{'code': '32', 'value_represented': 'Nevada'}
+{'code': '33', 'value_represented': 'New Hampshire'}
+{'code': '34', 'value_represented': 'New Jersey'}
+{'code': '35', 'value_represented': 'New Mexico'}
+{'code': '36', 'value_represented': 'New York'}
+{'code': '37', 'value_represented': 'North Carolina'}
+{'code': '38', 'value_represented': 'North Dakota'}
+{'code': '39', 'value_represented': 'Ohio'}
+{'code': '40', 'value_represented': 'Oklahoma'}
+{'code': '41', 'value_represented': 'Oregon'}
+{'code': '42', 'value_represented': 'Pennsylvania'}
+{'code': '44', 'value_represented': 'Rhode Island'}
+{'code': '45', 'value_represented': 'South Carolina'}
+{'code': '46', 'value_represented': 'South Dakota'}
+{'code': '47', 'value_represented': 'Tennessee'}
+{'code': '48', 'value_represented': 'Texas'}
+{'code': '49', 'value_represented': 'Utah'}
+{'code': '50', 'value_represented': 'Vermont'}
+{'code': '51', 'value_represented': 'Virginia'}
+{'code': '53', 'value_represented': 'Washington'}
+{'code': '54', 'value_represented': 'West Virginia'}
+{'code': '55', 'value_represented': 'Wisconsin'}
+{'code': '56', 'value_represented': 'Wyoming'}
+{'code': '66', 'value_represented': 'Guam'}
+{'code': '72', 'value_represented': 'Puerto Rico'}
+{'code': '78', 'value_represented': 'Virgin Islands'}
+{'code': '80', 'value_represented': 'Country Of Mexico'}
+{'code': 'CC', 'value_represented': 'Canada'}
+
+Counties in California
+{'code': '001', 'value_represented': 'Alameda'}
+{'code': '003', 'value_represented': 'Alpine'}
+{'code': '005', 'value_represented': 'Amador'}
+{'code': '007', 'value_represented': 'Butte'}
+{'code': '009', 'value_represented': 'Calaveras'}
+{'code': '011', 'value_represented': 'Colusa'}
+{'code': '013', 'value_represented': 'Contra Costa'}
+{'code': '015', 'value_represented': 'Del Norte'}
+{'code': '017', 'value_represented': 'El Dorado'}
+{'code': '019', 'value_represented': 'Fresno'}
+{'code': '021', 'value_represented': 'Glenn'}
+{'code': '023', 'value_represented': 'Humboldt'}
+{'code': '025', 'value_represented': 'Imperial'}
+{'code': '027', 'value_represented': 'Inyo'}
+{'code': '029', 'value_represented': 'Kern'}
+{'code': '031', 'value_represented': 'Kings'}
+{'code': '033', 'value_represented': 'Lake'}
+{'code': '035', 'value_represented': 'Lassen'}
+{'code': '037', 'value_represented': 'Los Angeles'}
+{'code': '039', 'value_represented': 'Madera'}
+{'code': '041', 'value_represented': 'Marin'}
+{'code': '043', 'value_represented': 'Mariposa'}
+{'code': '045', 'value_represented': 'Mendocino'}
+{'code': '047', 'value_represented': 'Merced'}
+{'code': '049', 'value_represented': 'Modoc'}
+{'code': '051', 'value_represented': 'Mono'}
+{'code': '053', 'value_represented': 'Monterey'}
+{'code': '055', 'value_represented': 'Napa'}
+{'code': '057', 'value_represented': 'Nevada'}
+{'code': '059', 'value_represented': 'Orange'}
+{'code': '061', 'value_represented': 'Placer'}
+{'code': '063', 'value_represented': 'Plumas'}
+{'code': '065', 'value_represented': 'Riverside'}
+{'code': '067', 'value_represented': 'Sacramento'}
+{'code': '069', 'value_represented': 'San Benito'}
+{'code': '071', 'value_represented': 'San Bernardino'}
+{'code': '073', 'value_represented': 'San Diego'}
+{'code': '075', 'value_represented': 'San Francisco'}
+{'code': '077', 'value_represented': 'San Joaquin'}
+{'code': '079', 'value_represented': 'San Luis Obispo'}
+{'code': '081', 'value_represented': 'San Mateo'}
+{'code': '083', 'value_represented': 'Santa Barbara'}
+{'code': '085', 'value_represented': 'Santa Clara'}
+{'code': '087', 'value_represented': 'Santa Cruz'}
+{'code': '089', 'value_represented': 'Shasta'}
+{'code': '091', 'value_represented': 'Sierra'}
+{'code': '093', 'value_represented': 'Siskiyou'}
+{'code': '095', 'value_represented': 'Solano'}
+{'code': '097', 'value_represented': 'Sonoma'}
+{'code': '099', 'value_represented': 'Stanislaus'}
+{'code': '101', 'value_represented': 'Sutter'}
+{'code': '103', 'value_represented': 'Tehama'}
+{'code': '105', 'value_represented': 'Trinity'}
+{'code': '107', 'value_represented': 'Tulare'}
+{'code': '109', 'value_represented': 'Tuolumne'}
+{'code': '111', 'value_represented': 'Ventura'}
+{'code': '113', 'value_represented': 'Yolo'}
+{'code': '115', 'value_represented': 'Yuba'}
+
+CBSA (Core Based Statistical Areas) in California
+{'code': '12540', 'value_represented': 'Bakersfield, CA'}
+{'code': '13860', 'value_represented': 'Bishop, CA'}
+{'code': '17020', 'value_represented': 'Chico, CA'}
+{'code': '17340', 'value_represented': 'Clearlake, CA'}
+{'code': '18860', 'value_represented': 'Crescent City, CA'}
+{'code': '20940', 'value_represented': 'El Centro, CA'}
+{'code': '21700', 'value_represented': 'Eureka-Arcata-Fortuna, CA'}
+{'code': '23420', 'value_represented': 'Fresno, CA'}
+{'code': '25260', 'value_represented': 'Hanford-Corcoran, CA'}
+{'code': '31080', 'value_represented': 'Los Angeles-Long Beach-Anaheim, CA'}
+{'code': '31100', 'value_represented': 'Los Angeles-Long Beach-Santa Ana, CA'}
+{'code': '31460', 'value_represented': 'Madera, CA'}
+{'code': '32900', 'value_represented': 'Merced, CA'}
+{'code': '33700', 'value_represented': 'Modesto, CA'}
+{'code': '34900', 'value_represented': 'Napa, CA'}
+{'code': '37100', 'value_represented': 'Oxnard-Thousand Oaks-Ventura, CA'}
+{'code': '38020', 'value_represented': 'Phoenix Lake-Cedar Ridge, CA'}
+{'code': '39780', 'value_represented': 'Red Bluff, CA'}
+{'code': '39820', 'value_represented': 'Redding, CA'}
+{'code': '40140', 'value_represented': 'Riverside-San Bernardino-Ontario, CA'}
+{'code': '40900', 'value_represented': 'Sacramento--Roseville--Arden-Arcade, CA'}
+{'code': '41500', 'value_represented': 'Salinas, CA'}
+{'code': '41740', 'value_represented': 'San Diego-Carlsbad, CA'}
+{'code': '41860', 'value_represented': 'San Francisco-Oakland-Hayward, CA'}
+{'code': '41940', 'value_represented': 'San Jose-Sunnyvale-Santa Clara, CA'}
+{'code': '42020', 'value_represented': 'San Luis Obispo-Paso Robles-Arroyo Grande, CA'}
+{'code': '42060', 'value_represented': 'Santa Barbara-Santa Maria-Goleta, CA'}
+{'code': '42100', 'value_represented': 'Santa Cruz-Watsonville, CA'}
+{'code': '42200', 'value_represented': 'Santa Maria-Santa Barbara, CA'}
+{'code': '42220', 'value_represented': 'Santa Rosa, CA'}
+{'code': '43760', 'value_represented': 'Sonora, CA'}
+{'code': '44700', 'value_represented': 'Stockton-Lodi, CA'}
+{'code': '45000', 'value_represented': 'Susanville, CA'}
+{'code': '46020', 'value_represented': 'Truckee-Grass Valley, CA'}
+{'code': '46380', 'value_represented': 'Ukiah, CA'}
+{'code': '46700', 'value_represented': 'Vallejo-Fairfield, CA'}
+{'code': '47300', 'value_represented': 'Visalia-Porterville, CA'}
+{'code': '49700', 'value_represented': 'Yuba City, CA'}
+
+Sites in Santa Clara
+{'code': '0001', 'value_represented': 'Gilroy-Monterey St.'}
+{'code': '0002', 'value_represented': 'Gilroy'}
+{'code': '0003', 'value_represented': 'San Jose-Alma Ave.'}
+{'code': '0004', 'value_represented': 'San Jose - 4th St.'}
+{'code': '0005', 'value_represented': 'San Jose - Jackson'}
+{'code': '0006', 'value_represented': 'San Jose - Knox Avenue'}
+{'code': '0386', 'value_represented': 'San Jose-Alum Rock'}
+{'code': '1001', 'value_represented': 'Los Gatos'}
+{'code': '1002', 'value_represented': 'Mountain View - Cuesta'}
+{'code': '2001', 'value_represented': None}
+{'code': '2002', 'value_represented': 'San Jose-5th St.'}
+{'code': '2003', 'value_represented': 'San Jose'}
+{'code': '2004', 'value_represented': 'San Jose-W. San Carlos St.'}
+{'code': '2005', 'value_represented': 'San Jose - Piedmont'}
+{'code': '2006', 'value_represented': 'San Martin'}
+{'code': '2007', 'value_represented': 'Sunnyvale - Ticonderoga'}
+{'code': '2008', 'value_represented': 'MT VIEW-WHISMAN PARK'}
+{'code': '2009', 'value_represented': 'Cupertino Monta Vista'}
+{'code': '2010', 'value_represented': 'Palo Alto Airport'}
+{'code': '2011', 'value_represented': 'Reid Hillview Airport'}
+{'code': '3001', 'value_represented': 'San Jose-Moorpark Ave.'}
+{'code': '4000', 'value_represented': None}
+{'code': '4001', 'value_represented': 'Sunnyvale'}
+{'code': '4002', 'value_represented': None}
+{'code': '5506', 'value_represented': 'Stevens Creek Elementary School'}
+{'code': '6001', 'value_represented': None}
+
+Parameters
+{'code': 'AIRNOW MAPS', 'value_represented': 'The parameters represented on AirNow maps (88101, 88502, and 44201)'}
+{'code': 'ALL', 'value_represented': 'Select all Parameters Available'}
+{'code': 'AQI POLLUTANTS', 'value_represented': 'Pollutants that have an AQI Defined'}
+{'code': 'CORE_HAPS', 'value_represented': 'Urban Air Toxic Pollutants'}
+{'code': 'CRITERIA', 'value_represented': 'Criteria Pollutants'}
+{'code': 'CSN DART', 'value_represented': 'List of CSN speciation parameters to populate the STI DART tool'}
+{'code': 'FORECAST', 'value_represented': 'Parameters routinely extracted by AirNow (STI)'}
+{'code': 'HAPS', 'value_represented': 'Hazardous Air Pollutants'}
+{'code': 'IMPROVE CARBON', 'value_represented': 'IMPROVE Carbon Parameters'}
+{'code': 'IMPROVE_SPECIATION', 'value_represented': 'PM2.5 Speciated Parameters Measured at IMPROVE sites'}
+{'code': 'MET', 'value_represented': 'Meteorological Parameters'}
+{'code': 'NATTS CORE HAPS', 'value_represented': 'The core list of toxics of interest to the NATTS program.'}
+{'code': 'NATTS REQUIRED', 'value_represented': 'Required compounds to be collected in the National Air Toxics Network'}
+{'code': 'PAMS', 'value_represented': 'Photochemical Assessment Monitoring System'}
+{'code': 'PAMS_VOC', 'value_represented': 'Volatile Organic Compound subset of the PAMS Parameters'}
+{'code': 'PM COARSE', 'value_represented': 'PM between 2.5 and 10 micrometers'}
+{'code': 'PM10 SPECIATION', 'value_represented': 'PM10 Speciated Parameters'}
+{'code': 'PM2.5 CONT NONREF', 'value_represented': 'PM2.5 Continuous, Nonreference Methods'}
+{'code': 'PM2.5 MASS/QA', 'value_represented': 'PM2.5 Mass and QA Parameters'}
+{'code': 'SCHOOL AIR TOXICS', 'value_represented': 'School Air Toxics Program Parameters'}
+{'code': 'SPECIATION', 'value_represented': 'PM2.5 Speciated Parameters'}
+{'code': 'SPECIATION CARBON', 'value_represented': 'PM2.5 Speciation Carbon Parameters'}
+{'code': 'SPECIATION CATION/ANION', 'value_represented': 'PM2.5 Speciation Cation/Anion Parameters'}
+{'code': 'SPECIATION METALS', 'value_represented': 'PM2.5 Speciation Metal Parameters'}
+{'code': 'UATMP CARBONYL', 'value_represented': 'Urban Air Toxics Monitoring Program Carbonyls'}
+{'code': 'UATMP VOC', 'value_represented': 'Urban Air Toxics Monitoring Program VOCs'}
+{'code': 'VOC', 'value_represented': 'Volatile organic compounds'}
+
+Paramters by Class
+{'code': '14129', 'value_represented': 'Lead (TSP) LC'}
+{'code': '42101', 'value_represented': 'Carbon monoxide'}
+{'code': '42401', 'value_represented': 'Sulfur dioxide'}
+{'code': '42602', 'value_represented': 'Nitrogen dioxide (NO2)'}
+{'code': '44201', 'value_represented': 'Ozone'}
+{'code': '81102', 'value_represented': 'PM10 Total 0-10um STP'}
+{'code': '85129', 'value_represented': 'Lead PM10 LC FRM/FEM'}
+{'code': '88101', 'value_represented': 'PM2.5 - Local Conditions'}

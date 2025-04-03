@@ -1,0 +1,25 @@
+services:
+  zookeeper:
+    image: ubuntu/zookeeper
+    container_name: bayguard-zookeeper
+    restart: always
+    ports:
+      - "2181:2181"
+    environment:
+      - ZOO_MY_ID=1
+      - ZOO_SERVERS=server.1=bayguard-zookeeper:2888:3888
+
+  kafka:
+    image: ubuntu/kafka 
+    container_name: bayguard-kafka
+    restart: always
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_ZOOKEEPER_CONNECT=bayguard-zookeeper:2181
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://0.0.0.0:9092
+      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL=PLAINTEXT
+    network_mode: host # May only work on Linux
