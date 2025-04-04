@@ -213,7 +213,7 @@ Parameters
 {'code': 'UATMP VOC', 'value_represented': 'Urban Air Toxics Monitoring Program VOCs'}
 {'code': 'VOC', 'value_represented': 'Volatile organic compounds'}
 
-Paramters by Class
+Parameters by Class
 {'code': '14129', 'value_represented': 'Lead (TSP) LC'}
 {'code': '42101', 'value_represented': 'Carbon monoxide'}
 {'code': '42401', 'value_represented': 'Sulfur dioxide'}
