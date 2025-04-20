@@ -2,9 +2,9 @@ import json
 from confluent_kafka import Consumer, KafkaException, Producer
 
 # Thresholds
-TEMP_THRESHOLD = 23.0
-COND_THRESHOLD = 5000.0
-TURB_THRESHOLD = 80.0
+TEMP_THRESHOLD = 03.0
+COND_THRESHOLD = 1000.0
+TURB_THRESHOLD = 10.0
 
 # Kafka Configs
 KAFKA_BROKER = "localhost:9092"
