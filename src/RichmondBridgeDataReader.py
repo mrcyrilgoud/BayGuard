@@ -1,12 +1,32 @@
 import requests
 import json
 import time
+import random
+from math import log
+from datetime import datetime, timedelta
 from confluent_kafka import Producer
 from collections import defaultdict
+from dotenv import load_dotenv
+import os
+
+# Load environment variables
+load_dotenv()
+ENABLE_DP = os.getenv("ENABLE_DP", "true").lower() == "true"
 
 # Kafka Configuration
 KAFKA_BROKER = "localhost:9092"
 KAFKA_TOPIC = "water_quality"
+
+# Sensor IDs
+SENSOR_IDS = [
+    "375603122254401",  # Richmond Bridge Pier 47
+    "375607122264701",  # Richmond Bridge Sensor 2
+    "374811122235001",  # Alcatraz
+    "374938122251801",  # SF Pier 17
+]
+
+# USGS API URL
+USGS_URL = f"http://waterservices.usgs.gov/nwis/iv/?format=json&sites={','.join(SENSOR_IDS)}&parameterCd=00010,00095,00300,00400,63680&siteStatus=ALL"
 
 # Create Kafka producer
 def create_producer():
@@ -17,8 +37,29 @@ def create_producer():
         print(f"Error creating Kafka producer: {e}")
         return None
 
-# API Endpoint
-USGS_URL = "http://waterservices.usgs.gov/nwis/iv/?format=json&sites=375603122254401&parameterCd=00010,00095,00300,00400,63680&siteStatus=ALL"
+# Add Laplace noise for differential privacy
+def laplace_noise(scale: float) -> float:
+    u = random.uniform(-0.5, 0.5)
+    return -scale * (1 if u < 0 else -1) * log(1 - 2 * abs(u))
+
+def privatize_coordinate(value: float, epsilon: float = 1.0) -> float:
+    scale = 0.0005 / epsilon
+    return value + laplace_noise(scale)
+
+# Normalize timestamp to nearest 15 minutes
+def normalize_timestamp(ts):
+    dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+    rounded = dt - timedelta(minutes=dt.minute % 15, seconds=dt.second, microseconds=dt.microsecond)
+    return rounded.isoformat()
+
+# Check if a timestamp is recent (within threshold_hours)
+def is_recent(timestamp: str, threshold_hours: int = 24) -> bool:
+    try:
+        dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        now = datetime.now(dt.tzinfo)
+        return (now - dt).total_seconds() < threshold_hours * 3600
+    except Exception:
+        return False
 
 # Fetch data
 def fetch_data():
@@ -51,21 +92,30 @@ def parse_and_consolidate_data(data):
 
             site_name = site_info.get("siteName")
             site_code = site_info.get("siteCode", [{}])[0].get("value")
-            latitude = site_info.get("geoLocation", {}).get("geogLocation", {}).get("latitude")
-            longitude = site_info.get("geoLocation", {}).get("geogLocation", {}).get("longitude")
+            lat_raw = site_info.get("geoLocation", {}).get("geogLocation", {}).get("latitude")
+            lon_raw = site_info.get("geoLocation", {}).get("geogLocation", {}).get("longitude")
             variable_name = variable.get("variableName", "").lower()
-            unit = variable.get("unit", {}).get("unitCode")
 
             if values and values[0].get("value"):
-                latest = values[0]["value"][-1]  # Get the most recent value
-                timestamp = latest.get("dateTime")
+                latest = values[0]["value"][-1]
+                raw_timestamp = latest.get("dateTime")
+
+                if not is_recent(raw_timestamp):
+                    continue  # Skip stale data
+
+                timestamp = normalize_timestamp(raw_timestamp)
                 key = (site_code, timestamp)
 
                 consolidated[key]["site_name"] = site_name
                 consolidated[key]["site_code"] = site_code
-                consolidated[key]["latitude"] = latitude
-                consolidated[key]["longitude"] = longitude
                 consolidated[key]["timestamp"] = timestamp
+
+                if ENABLE_DP:
+                    consolidated[key]["latitude"] = privatize_coordinate(lat_raw)
+                    consolidated[key]["longitude"] = privatize_coordinate(lon_raw)
+                else:
+                    consolidated[key]["latitude"] = lat_raw
+                    consolidated[key]["longitude"] = lon_raw
 
                 if "temperature" in variable_name:
                     consolidated[key]["temperature"] = latest.get("value")
@@ -119,4 +169,5 @@ if __name__ == "__main__":
             print("No data fetched.")
 
         print("Sleeping for 15 minutes...")
-        time.sleep(900)  # Sleep for 15 minutes (900 seconds)
+        time.sleep(900)
+
