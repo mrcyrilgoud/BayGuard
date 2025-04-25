@@ -1,124 +1,160 @@
 import json
-from confluent_kafka import Consumer, Producer
-from dgim import Dgim  # Using Simon Dollé's DGIM class
-import os
+from confluent_kafka import Consumer, KafkaException, Producer
+from collections import defaultdict
+from redis import Redis
+from dgim import Dgim  # Simon Dolle's DGIM class
 from dotenv import load_dotenv
+from sklearn.neighbors import NearestNeighbors
+import numpy as np
+import os
 
-# Load .env config
+# Load environment variables
 load_dotenv()
 
-# Constants from .env
-KAFKA_BROKER = os.getenv("KAFKA_BROKER")
-KAFKA_TOPIC = os.getenv("KAFKA_TOPIC")
-ALERT_TOPIC = os.getenv("ALERT_TOPIC")
+# Configuration
+TEMP_THRESHOLD = float(os.getenv("TEMP_THRESHOLD", 3.0))
+COND_THRESHOLD = float(os.getenv("COND_THRESHOLD", 1000.0))
+TURB_THRESHOLD = float(os.getenv("TURB_THRESHOLD", 10.0))
+KAFKA_BROKER = os.getenv("KAFKA_BROKER", "localhost:9092")
+SOURCE_TOPIC = os.getenv("SOURCE_TOPIC", "water_quality")
+ALERT_TOPIC = os.getenv("ALERT_TOPIC", "water_quality_alerts")
+GROUP_ID = os.getenv("GROUP_ID", "pollution-threshold-checker")
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+WINDOW_SIZE = int(os.getenv("WINDOW_SIZE", 4))
+ALERT_LOG_KEY = os.getenv("ALERT_LOG_KEY", "alert_logs")
+LSH_NEIGHBORS = int(os.getenv("LSH_NEIGHBORS", 2))
 
-thresholds = {
-    "turbidity": float(os.getenv("TURBIDITY_THRESHOLD", 10.0)),
-    "temperature": float(os.getenv("TEMPERATURE_THRESHOLD", 25.0)),
-    "specific_conductance": float(os.getenv("CONDUCTANCE_THRESHOLD", 800.0)),
-    "spike_limit": int(os.getenv("SPIKE_LIMIT", 3))
-}
+# Initialize Redis and Kafka
+redis_client = Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
+site_alerted = set()
+lsh_buckets = {}
 
-# Initialize DGIM for each metric
-WINDOW_SIZE = 4  # last 1 hour if sampling every 15 min
-dgim_turbidity = Dgim(N=WINDOW_SIZE)
-dgim_temperature = Dgim(N=WINDOW_SIZE)
-dgim_conductance = Dgim(N=WINDOW_SIZE)
+from functools import lru_cache
 
-# Store recent values to compute simple averages
-turbidity_vals = []
-temperature_vals = []
-conductance_vals = []
+@lru_cache(maxsize=1)
+def build_lsh_buckets():
+    try:
+        site_keys = redis_client.keys("*:latitude")
+        site_codes = [key.split(":")[0] for key in site_keys]
+        coords = []
+        for code in site_codes:
+            lat = redis_client.get(f"{code}:latitude")
+            lon = redis_client.get(f"{code}:longitude")
+            if lat and lon:
+                coords.append([float(lat), float(lon)])
+        if coords:
+            model = NearestNeighbors(n_neighbors=LSH_NEIGHBORS + 1).fit(np.array(coords))
+            distances, indices = model.kneighbors(np.array(coords))
+            for i, site_code in enumerate(site_codes):
+                lsh_buckets[site_code] = [site_codes[j] for j in indices[i] if site_codes[j] != site_code]
+            print("LSH Buckets for Debugging:")
+            for site, peers in lsh_buckets.items():
+                print(f"{site} → {peers}")
+    except Exception as e:
+        print(f"Error building LSH buckets: {e}")
+        print(f"Error building LSH buckets: {e}")
 
+def create_producer():
+    return Producer({"bootstrap.servers": KAFKA_BROKER})
 
 def create_consumer():
     return Consumer({
-        'bootstrap.servers': KAFKA_BROKER,
-        'group.id': 'water-quality-consumer-group',
-        'auto.offset.reset': 'earliest'
+        "bootstrap.servers": KAFKA_BROKER,
+        "group.id": GROUP_ID,
+        "auto.offset.reset": "earliest"
     })
 
-def create_producer():
-    return Producer({'bootstrap.servers': KAFKA_BROKER})
+def update_metric_cache(site_code, metric, value):
+    key = f"{site_code}:{metric}"
+    redis_client.lpush(key, value)
+    redis_client.ltrim(key, 0, WINDOW_SIZE - 1)
 
-producer = create_producer()
+def get_metric_average(site_code, metric):
+    key = f"{site_code}:{metric}"
+    values = redis_client.lrange(key, 0, -1)
+    float_vals = [float(v) for v in values if v not in (None, "")]
+    return sum(float_vals) / len(float_vals) if float_vals else None
 
-def process_message(message):
+def safe_float(val):
     try:
-        data = json.loads(message.value().decode('utf-8'))
-        turbidity = float(data.get("turbidity", 0))
-        temperature = float(data.get("temperature", 0))
-        conductance = float(data.get("specific_conductance", 0))
-        site_code = data.get("site_code", "unknown")
-        site_name = data.get("site_name", "unknown")
-        latitude = data.get("latitude", None)
-        longitude = data.get("longitude", None)
-        timestamp = data.get("timestamp", "unknown")
+        return float(val)
+    except (TypeError, ValueError):
+        return None
 
-        print(f"[INFO] Readings -> Turbidity: {turbidity}, Temperature: {temperature}, Conductance: {conductance}")
+def get_dgim_violation_count(site, metric, threshold):
+    key = f"{site}:{metric}"
+    values = redis_client.lrange(key, 0, WINDOW_SIZE - 1)
+    dgim = Dgim(N=WINDOW_SIZE)
+    for val in values:
+        try:
+            dgim.update(float(val) > threshold)
+        except:
+            pass
+    return dgim.get_count()
 
-        # Keep track of recent values for averaging
-        turbidity_vals.append(turbidity)
-        temperature_vals.append(temperature)
-        conductance_vals.append(conductance)
+def validate_cross_site(site_code):
+    if site_code not in lsh_buckets:
+        build_lsh_buckets()  # Rebuild in real-time if LSH data is stale
+    peers = lsh_buckets.get(site_code, []) + [site_code]
+    confirmed_sites = []
+    for peer in peers:
+        violations = 0
+        for metric, threshold in zip(
+                ["temperature", "specific_conductance", "turbidity"],
+                [TEMP_THRESHOLD, COND_THRESHOLD, TURB_THRESHOLD]
+        ):
+            if get_dgim_violation_count(peer, metric, threshold) >= 2:
+                violations += 1
+        if violations >= 2:
+            confirmed_sites.append(peer)
+    return confirmed_sites if len(confirmed_sites) >= 2 else []
 
-        if len(turbidity_vals) > WINDOW_SIZE:
-            turbidity_vals.pop(0)
-            temperature_vals.pop(0)
-            conductance_vals.pop(0)
+dgim_store = defaultdict(lambda: {
+    'temperature': Dgim(N=WINDOW_SIZE),
+    'specific_conductance': Dgim(N=WINDOW_SIZE),
+    'turbidity': Dgim(N=WINDOW_SIZE)
+})
 
-        # Update DGIM with boolean threshold check
-        dgim_turbidity.update(turbidity > thresholds["turbidity"])
-        dgim_temperature.update(temperature > thresholds["temperature"])
-        dgim_conductance.update(conductance > thresholds["specific_conductance"])
+def process_record(record):
+    site = record.get("site_code")
+    lat = record.get("latitude")
+    lon = record.get("longitude")
+    if lat and lon:
+        redis_client.set(f"{site}:latitude", lat)
+        redis_client.set(f"{site}:longitude", lon)
+    site = record.get("site_code")
+    temp = safe_float(record.get("temperature"))
+    cond = safe_float(record.get("specific_conductance"))
+    turb = safe_float(record.get("turbidity"))
 
-        # Estimate high-value occurrences in the past hour
-        turbidity_spikes = dgim_turbidity.get_count()
-        temperature_spikes = dgim_temperature.get_count()
-        conductance_spikes = dgim_conductance.get_count()
+    if temp is not None:
+        update_metric_cache(site, "temperature", temp)
+        dgim_store[site]['temperature'].update(temp > TEMP_THRESHOLD)
+    if cond is not None:
+        update_metric_cache(site, "specific_conductance", cond)
+        dgim_store[site]['specific_conductance'].update(cond > COND_THRESHOLD)
+    if turb is not None:
+        update_metric_cache(site, "turbidity", turb)
+        dgim_store[site]['turbidity'].update(turb > TURB_THRESHOLD)
 
-        print(f"[INFO] Recent spikes -> Turbidity: {turbidity_spikes}, Temperature: {temperature_spikes}, Conductance: {conductance_spikes}")
+    violations = 0
+    if temp is not None and dgim_store[site]['temperature'].get_count() >= 2:
+        violations += 1
+    if cond is not None and dgim_store[site]['specific_conductance'].get_count() >= 2:
+        violations += 1
+    if turb is not None and dgim_store[site]['turbidity'].get_count() >= 2:
+        violations += 1
 
-        alerts = []
-        if turbidity_spikes >= thresholds["spike_limit"]:
-            alerts.append("turbidity")
-        if temperature_spikes >= thresholds["spike_limit"]:
-            alerts.append("temperature")
-        if conductance_spikes >= thresholds["spike_limit"]:
-            alerts.append("specific_conductance")
+    return violations >= 2
 
-        if alerts:
-            metric_averages = {
-                "turbidity": sum(turbidity_vals) / len(turbidity_vals),
-                "temperature": sum(temperature_vals) / len(temperature_vals),
-                "specific_conductance": sum(conductance_vals) / len(conductance_vals)
-            }
-
-            alert_msg = {
-                "type": "UnifiedThresholdAlert",
-                "metrics": {k: round(metric_averages[k], 2) for k in alerts},
-                "source": "RBConsumer.py",
-                "sensor": site_code,
-                "site_name": site_name,
-                "latitude": latitude,
-                "longitude": longitude,
-                "timestamp": timestamp
-            }
-
-            print("\n⚠️ Unified Alert: One or more parameters have exceeded safe levels:")
-            print(json.dumps(alert_msg, indent=2))
-
-            producer.produce(ALERT_TOPIC, json.dumps(alert_msg).encode('utf-8'))
-            producer.flush()
-
-    except Exception as e:
-        print(f"[ERROR] Failed to process message: {e}")
-
-def main():
+def run():
+    build_lsh_buckets()
     consumer = create_consumer()
-    consumer.subscribe([KAFKA_TOPIC])
+    producer = create_producer()
+    consumer.subscribe([SOURCE_TOPIC])
 
-    print("[STARTED] Listening to Kafka topic for water quality data...")
+    print(f"\u2705 Watching '{SOURCE_TOPIC}' for threshold violations...")
 
     try:
         while True:
@@ -126,17 +162,56 @@ def main():
             if msg is None:
                 continue
             if msg.error():
-                print(f"[ERROR] Consumer error: {msg.error()}")
-                continue
+                raise KafkaException(msg.error())
 
-            process_message(msg)
+            try:
+                record = json.loads(msg.value().decode("utf-8"))
+                site_code = record.get("site_code")
+
+                if process_record(record):
+                    confirmed_group = validate_cross_site(site_code)
+                    if confirmed_group and not site_alerted.intersection(set(confirmed_group)):
+                        alert = {
+                            "type": "CrossSiteValidatedAlert",
+                            "lsh_buckets": lsh_buckets,
+                            "group_sites": confirmed_group,
+                            "source": "RBConsumer.py",
+                            "timestamp": record.get("timestamp")
+                        }
+                        producer.produce(ALERT_TOPIC, key=site_code, value=json.dumps(alert))
+                        producer.flush()
+                        redis_client.lpush(ALERT_LOG_KEY, json.dumps(alert))
+                        redis_client.ltrim(ALERT_LOG_KEY, 0, 9)
+                        site_alerted.update(confirmed_group)
+                        print(f"\U0001F6A8 CrossSiteValidatedAlert sent for group: {confirmed_group}")
+                    elif not confirmed_group:
+                        alert = {
+                            "type": "UnifiedThresholdAlert",
+                            "metrics": {
+                                "temperature": get_metric_average(site_code, "temperature"),
+                                "specific_conductance": get_metric_average(site_code, "specific_conductance"),
+                                "turbidity": get_metric_average(site_code, "turbidity")
+                            },
+                            "source": "RBConsumer.py",
+                            "sensor": site_code,
+                            "site_name": record.get("site_name"),
+                            "latitude": record.get("latitude"),
+                            "longitude": record.get("longitude"),
+                            "timestamp": record.get("timestamp")
+                        }
+                        producer.produce(ALERT_TOPIC, key=alert["sensor"], value=json.dumps(alert))
+                        producer.flush()
+                        redis_client.lpush(ALERT_LOG_KEY, json.dumps(alert))
+                        redis_client.ltrim(ALERT_LOG_KEY, 0, 9)
+                        print(f"\U0001F6A8 UnifiedThresholdAlert sent for {site_code} at {record['timestamp']}")
+
+            except json.JSONDecodeError:
+                print("Invalid JSON received.")
 
     except KeyboardInterrupt:
-        pass
+        print("\U0001F44B Exiting consumer.")
     finally:
         consumer.close()
 
 if __name__ == "__main__":
-    main()
-
-
+    run()
