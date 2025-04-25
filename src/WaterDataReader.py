@@ -155,7 +155,7 @@ def main():
                 logger.info("No data fetched.")
 
             logger.info("Sleeping for 15 minutes...")
-            time.sleep(900)
+            time.sleep(30)
     except KeyboardInterrupt:
         logger.info("🛑 Interrupted by user.")
     finally:
