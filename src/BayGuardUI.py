@@ -10,6 +10,7 @@ load_dotenv()
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 ALERT_LOG_KEY = os.getenv("ALERT_LOG_KEY", "alert_logs")
+VERIFIED_ALERT_KEY = "verified_alerts"
 
 r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
 
@@ -22,7 +23,16 @@ st.experimental_rerun_interval = 10
 # Load alerts
 from streamlit_folium import folium_static
 import folium
-alerts = r.lrange(ALERT_LOG_KEY, 0, 9)
+alerts = r.lrange(ALERT_LOG_KEY, 0, 49)
+
+try:
+    verified_alerts_raw = r.hgetall(VERIFIED_ALERT_KEY)
+    if not verified_alerts_raw:
+        verified_alerts_raw = {}
+except redis.exceptions.ResponseError:
+    verified_alerts_raw = {}
+
+verified_alerts = {k: json.loads(v) for k, v in verified_alerts_raw.items()}
 
 SITE_METADATA = {
     "375603122254401": {
@@ -66,7 +76,9 @@ else:
             alert = json.loads(raw_alert)
             alert_type = alert.get("type")
             timestamp = alert.get("timestamp", "N/A")
-            st.subheader(f"#{i+1}: {alert_type} @ {timestamp}")
+            alert_id = alert.get("alert_id")
+            verified_badge = " ✅" if alert_id in verified_alerts else ""
+            st.subheader(f"#{i+1}: {alert_type} @ {timestamp}{verified_badge}")
 
             if alert_type == "UnifiedThresholdAlert":
                 site_code = alert.get("sensor")
@@ -105,13 +117,19 @@ else:
                 except:
                     pass
 
+            if alert_id and alert_id in verified_alerts:
+                with st.expander("🔍 Show ML Analysis"):
+                    st.markdown(verified_alerts[alert_id].get("llm_verification", "No reasoning available."))
+
             st.markdown("---")
         except Exception as e:
             st.warning(f"Failed to parse alert: {e}")
 
 if marker_count > 0:
-    st.subheader("🗼 Alert Map")
+    st.subheader("🛀 Alert Map")
     folium_static(alert_map, width=900, height=500)
 
 st.caption("BayGuard | Streamlit Real-Time Dashboard")
+
+
 
