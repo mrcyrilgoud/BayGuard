@@ -1,4 +1,5 @@
 import json
+import uuid
 from confluent_kafka import Consumer, KafkaException, Producer
 from collections import defaultdict
 from redis import Redis
@@ -30,9 +31,6 @@ redis_client = Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
 site_alerted = set()
 lsh_buckets = {}
 
-from functools import lru_cache
-
-@lru_cache(maxsize=1)
 def build_lsh_buckets():
     try:
         site_keys = redis_client.keys("*:latitude")
@@ -48,11 +46,8 @@ def build_lsh_buckets():
             distances, indices = model.kneighbors(np.array(coords))
             for i, site_code in enumerate(site_codes):
                 lsh_buckets[site_code] = [site_codes[j] for j in indices[i] if site_codes[j] != site_code]
-            print("LSH Buckets for Debugging:")
-            for site, peers in lsh_buckets.items():
-                print(f"{site} → {peers}")
+            print("LSH Buckets ready")
     except Exception as e:
-        print(f"Error building LSH buckets: {e}")
         print(f"Error building LSH buckets: {e}")
 
 def create_producer():
@@ -95,7 +90,7 @@ def get_dgim_violation_count(site, metric, threshold):
 
 def validate_cross_site(site_code):
     if site_code not in lsh_buckets:
-        build_lsh_buckets()  # Rebuild in real-time if LSH data is stale
+        build_lsh_buckets()
     peers = lsh_buckets.get(site_code, []) + [site_code]
     confirmed_sites = []
     for peer in peers:
@@ -123,7 +118,6 @@ def process_record(record):
     if lat and lon:
         redis_client.set(f"{site}:latitude", lat)
         redis_client.set(f"{site}:longitude", lon)
-    site = record.get("site_code")
     temp = safe_float(record.get("temperature"))
     cond = safe_float(record.get("specific_conductance"))
     turb = safe_float(record.get("turbidity"))
@@ -154,7 +148,7 @@ def run():
     producer = create_producer()
     consumer.subscribe([SOURCE_TOPIC])
 
-    print(f"\u2705 Watching '{SOURCE_TOPIC}' for threshold violations...")
+    print(f"✅ Watching '{SOURCE_TOPIC}' for threshold violations...")
 
     try:
         while True:
@@ -170,8 +164,10 @@ def run():
 
                 if process_record(record):
                     confirmed_group = validate_cross_site(site_code)
+                    alert_id = str(uuid.uuid4())
                     if confirmed_group and not site_alerted.intersection(set(confirmed_group)):
                         alert = {
+                            "alert_id": alert_id,
                             "type": "CrossSiteValidatedAlert",
                             "lsh_buckets": lsh_buckets,
                             "group_sites": confirmed_group,
@@ -181,11 +177,12 @@ def run():
                         producer.produce(ALERT_TOPIC, key=site_code, value=json.dumps(alert))
                         producer.flush()
                         redis_client.lpush(ALERT_LOG_KEY, json.dumps(alert))
-                        redis_client.ltrim(ALERT_LOG_KEY, 0, 9)
+                        redis_client.ltrim(ALERT_LOG_KEY, 0, 49)
                         site_alerted.update(confirmed_group)
-                        print(f"\U0001F6A8 CrossSiteValidatedAlert sent for group: {confirmed_group}")
+                        print(f"🚨 CrossSiteValidatedAlert sent for group: {confirmed_group}")
                     elif not confirmed_group:
                         alert = {
+                            "alert_id": alert_id,
                             "type": "UnifiedThresholdAlert",
                             "metrics": {
                                 "temperature": get_metric_average(site_code, "temperature"),
@@ -202,14 +199,14 @@ def run():
                         producer.produce(ALERT_TOPIC, key=alert["sensor"], value=json.dumps(alert))
                         producer.flush()
                         redis_client.lpush(ALERT_LOG_KEY, json.dumps(alert))
-                        redis_client.ltrim(ALERT_LOG_KEY, 0, 9)
-                        print(f"\U0001F6A8 UnifiedThresholdAlert sent for {site_code} at {record['timestamp']}")
+                        redis_client.ltrim(ALERT_LOG_KEY, 0, 49)
+                        print(f"🚨 UnifiedThresholdAlert sent for {site_code} at {record['timestamp']}")
 
             except json.JSONDecodeError:
                 print("Invalid JSON received.")
 
     except KeyboardInterrupt:
-        print("\U0001F44B Exiting consumer.")
+        print("👋 Exiting consumer.")
     finally:
         consumer.close()
 
