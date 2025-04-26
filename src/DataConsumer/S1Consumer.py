@@ -13,7 +13,7 @@ import os
 load_dotenv()
 
 # Configuration
-TEMP_THRESHOLD = float(os.getenv("TEMP_THRESHOLD", 3.0))
+TEMP_THRESHOLD = float(os.getenv("TEMP_THRESHOLD", 25.0))
 COND_THRESHOLD = float(os.getenv("COND_THRESHOLD", 1000.0))
 TURB_THRESHOLD = float(os.getenv("TURB_THRESHOLD", 10.0))
 KAFKA_BROKER = os.getenv("KAFKA_BROKER", "localhost:9092")
